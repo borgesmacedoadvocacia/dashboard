@@ -257,14 +257,22 @@ function toInputDate(d) {
 async function buscarDoSheets() {
   const cfg = CONFIG;
 
-  const [csvAtend, csvContratos] = await Promise.all([
-    fetchCSV(cfg.SHEET_ATENDIMENTOS.ID, cfg.SHEET_ATENDIMENTOS.GID),
-    fetchCSV(cfg.SHEET_CONTRATOS.ID,    cfg.SHEET_CONTRATOS.GID),
+  const [csvAtend, csvContratos, rows2025] = await Promise.all([
+    fetchCSV(cfg.SHEET_ATENDIMENTOS.ID,   cfg.SHEET_ATENDIMENTOS.GID),
+    fetchCSV(cfg.SHEET_CONTRATOS.ID,      cfg.SHEET_CONTRATOS.GID),
+    fetchSheetData(cfg.SHEET_CONTRATOS_2025.ID, cfg.SHEET_CONTRATOS_2025.GID),
   ]);
 
+  const atendimentos  = parseCSV(csvAtend);
+  const contratos2026 = parseCSV(csvContratos);
+  // Normaliza 2025: mapeia NOME COMPLETO para a chave de cliente usada em 2026
+  const clienteKey = cfg.SHEET_CONTRATOS.COLS.CLIENTE;
+  const contratos2025 = sheetsToObjects(rows2025).map(r => ({
+    ...r,
+    [clienteKey]: r[cfg.SHEET_CONTRATOS_2025.COL_CLIENTE] || r[clienteKey] || '',
+  }));
+  const contratos = [...contratos2026, ...contratos2025];
 
-  const atendimentos = parseCSV(csvAtend);
-  const contratos    = parseCSV(csvContratos);
   window._rawAtend     = atendimentos;
   window._rawContratos = contratos;
 
@@ -351,11 +359,16 @@ function calcularHistorico(nLow, isSdr, atendimentos, contratos, dataRef) {
   const colContrat = isSdr ? 'SDR'  : cC.CLOSER;
   const hist = [];
 
-  for (let i = 4; i >= 0; i--) {
+  // Calcula meses desde Jan/2025 até dataRef
+  const numMeses = (dataRef.getFullYear() - 2025) * 12 + dataRef.getMonth() + 1;
+
+  for (let i = numMeses - 1; i >= 0; i--) {
     const ini = new Date(dataRef.getFullYear(), dataRef.getMonth() - i, 1);
     const fim = new Date(dataRef.getFullYear(), dataRef.getMonth() - i + 1, 0, 23, 59, 59);
-    const mes      = ini.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
-    const mesLabel = mes.charAt(0).toUpperCase() + mes.slice(1);
+    const mesLabel = ini.toLocaleString('pt-BR', { month: 'short', year: '2-digit' })
+      .replace('.', '').replace(' de ', '/').replace('. ', '/');
+    const [m, a] = mesLabel.split('/');
+    const label = m.charAt(0).toUpperCase() + m.slice(1) + (a ? '/' + a : '');
 
     const agendadas = atendimentos.filter(r => {
       const d = parseBRDate(r[cA.DATA_AGENDAMENTO]);
@@ -375,7 +388,7 @@ function calcularHistorico(nLow, isSdr, atendimentos, contratos, dataRef) {
       })
       .reduce((s, r) => s + parseBRL(r[cC.HONORARIOS]), 0);
 
-    hist.push({ mes: mesLabel, agendadas, realizadas, faturamento });
+    hist.push({ mes: label, agendadas, realizadas, faturamento });
   }
 
   return hist;
@@ -737,13 +750,41 @@ function renderizarGraficos(vends) {
   const meses = vends[0]?.historico?.map(h => h.mes) || [];
   const cores  = ['#2563eb','#22c55e','#f59e0b','#a855f7','#ef4444','#06b6d4'];
 
-  const datasetsFat = vends.map((v, i) => ({
-    label:           v.nome,
-    data:            v.historico?.map(h => h.faturamento) || [],
-    borderColor:     cores[i % cores.length],
-    backgroundColor: cores[i % cores.length] + '22',
-    tension: 0.4, fill: true, pointRadius: 4,
-  }));
+  // Calcula faturamento total por mês direto dos contratos brutos (inclui 2025)
+  const cC = CONFIG.SHEET_CONTRATOS.COLS;
+  const totalPorMes = meses.map((_, idx) => {
+    const ref = vends[0]?.historico?.[idx];
+    if (!ref) return 0;
+    const [m, a] = ref.mes.split('/');
+    const meses_pt = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const mesNum = meses_pt.indexOf(m.toLowerCase());
+    const anoNum = a ? 2000 + parseInt(a) : new Date().getFullYear();
+    if (mesNum === -1) return 0;
+    const ini = new Date(anoNum, mesNum, 1);
+    const fim = new Date(anoNum, mesNum + 1, 0, 23, 59, 59);
+    return (window._rawContratos || [])
+      .filter(r => { const d = parseBRDate(r[cC.DATA_FECHAMENTO]); return d && d >= ini && d <= fim; })
+      .reduce((s, r) => s + parseBRL(r[cC.HONORARIOS]), 0);
+  });
+
+  const datasetsFat = [
+    {
+      label: 'Total',
+      data: totalPorMes,
+      borderColor: '#ffffff',
+      backgroundColor: 'rgba(255,255,255,0.05)',
+      borderWidth: 2,
+      tension: 0.4, fill: true, pointRadius: 3,
+    },
+    ...vends.map((v, i) => ({
+      label:           v.nome,
+      data:            v.historico?.map(h => h.faturamento) || [],
+      borderColor:     cores[i % cores.length],
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      tension: 0.4, fill: false, pointRadius: 3,
+    })),
+  ];
 
   if (grafFaturamento) grafFaturamento.destroy();
   grafFaturamento = new Chart(document.getElementById('grafico-faturamento'), {

@@ -24,8 +24,7 @@ const CONFIG = {
     STATUS_REALIZADO: 'Realizado',
   },
 
-  // --- PLANILHA 2: Contratos Fechados ---
-  // GID 467767546 = aba consolidada com todos os contratos de 2026
+  // --- PLANILHA 2: Contratos Fechados 2026 ---
   SHEET_CONTRATOS: {
     ID:  '1FWbG3Xuo8TjFfi0puF6E9GFsXrUb6fRdollTfq9-4Dg',
     GID: '467767546',
@@ -37,6 +36,13 @@ const CONFIG = {
       HONORARIOS:      'VALOR DA ENTRADA',
       CLIENTE:         'CONTATO (QUEM ESTÁ EM CONTATO COM O ESCRITÓRIO)',
     },
+  },
+
+  // --- PLANILHA 3: Contratos Fechados 2025 (aba DADOS) ---
+  SHEET_CONTRATOS_2025: {
+    ID:  '1nQGtxa97k5vamnt7udQJvjcNadBFAWHgd6v6dvOhI1c',
+    GID: '1037589154',
+    COL_CLIENTE: 'NOME COMPLETO',
   },
 
   // --- EQUIPE ATIVA E METAS ---
