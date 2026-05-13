@@ -475,20 +475,40 @@ function getFimFiltro() {
   return val ? new Date(val + 'T12:00:00') : new Date();
 }
 
-// Calcula a meta proporcional com base na data final do filtro
+// Conta dias úteis entre duas datas (intervalo livre)
+function contarDiasUteisPeriodo(ini, fim) {
+  let count = 0;
+  const d   = new Date(ini); d.setHours(0, 0, 0, 0);
+  const end = new Date(fim); end.setHours(23, 59, 59);
+  while (d <= end) {
+    const dow = d.getDay();
+    const iso = d.toISOString().slice(0, 10);
+    if (dow !== 0 && dow !== 6 && !getFeriados(d.getFullYear()).has(iso)) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+// Calcula a meta proporcional com base no período selecionado
 function calcMetaProp(meta) {
   const ref        = getFimFiltro();
   const ano        = ref.getFullYear();
   const mes        = ref.getMonth();
-  const diaRef     = ref.getDate();
   const ultimoDia  = new Date(ano, mes + 1, 0).getDate();
   const totalUtils = contarDiasUteis(ano, mes, ultimoDia);
-  const ateRef     = contarDiasUteis(ano, mes, diaRef);
+
+  // Usa o início do filtro para calcular dias úteis do período selecionado
+  const iniStr = document.getElementById('data-inicio')?.value;
+  const ini    = iniStr ? new Date(iniStr + 'T00:00:00') : new Date(ano, mes, 1);
+  const diaUtil = (ini.getFullYear() === ano && ini.getMonth() === mes && ini.getDate() === 1)
+    ? contarDiasUteis(ano, mes, ref.getDate())
+    : contarDiasUteisPeriodo(ini, ref);
+
   return {
-    valor:     totalUtils > 0 ? meta * (ateRef / totalUtils) : 0,
-    diaUtil:   ateRef,
+    valor:     totalUtils > 0 ? meta * (diaUtil / totalUtils) : 0,
+    diaUtil,
     totalUtils,
-    diaCalend: diaRef,
+    diaCalend: ref.getDate(),
   };
 }
 
