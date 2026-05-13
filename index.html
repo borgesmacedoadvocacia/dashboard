@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Borges Macedo</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- CABEÇALHO -->
+  <header class="header">
+    <div class="header-logo">
+      <img src="logo.png" alt="Borges Macedo" class="logo-img" />
+    </div>
+
+    <div class="header-filters">
+      <div class="date-picker" id="date-picker">
+        <button class="date-picker-btn" id="date-picker-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="date-picker-label">Este mês, até agora</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="date-picker-panel" id="date-picker-panel">
+          <div class="date-presets">
+            <button class="preset-item" data-preset="hoje">Hoje</button>
+            <button class="preset-item" data-preset="ontem">Ontem</button>
+            <button class="preset-item" data-preset="esta-semana">Esta semana</button>
+            <button class="preset-item" data-preset="mes-ate-agora">Este mês, até agora</button>
+<button class="preset-item" data-preset="este-ano">Este ano, até agora</button>
+            <button class="preset-item" data-preset="mes-passado">Mês passado</button>
+            <div class="preset-divider"></div>
+            <button class="preset-item" data-preset="fixo">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Período fixo (personalizado)
+            </button>
+          </div>
+          <div class="date-custom" id="date-custom" style="display:none">
+            <div class="date-custom-row">
+              <div class="date-custom-field">
+                <label>Data início</label>
+                <input type="date" id="data-inicio" />
+              </div>
+              <div class="date-custom-field">
+                <label>Data fim</label>
+                <input type="date" id="data-fim" />
+              </div>
+            </div>
+            <button class="date-apply-btn" id="btn-filtrar">Aplicar</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn-reset-data" id="btn-reset-data" title="Redefinir para este mês" onclick="redefinirFiltro()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      </button>
+    </div>
+
+    <div class="header-right">
+      <button class="btn-atualizar" id="btn-atualizar" onclick="atualizarDados()">
+        <svg id="icon-refresh" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        <span>Atualizar dados</span>
+      </button>
+      <div class="header-updated">
+        Atualizado em: <span id="ultima-atualizacao">—</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- CARDS DE RESUMO GERAL -->
+  <section class="resumo-geral">
+    <div class="resumo-coluna-esq">
+      <div class="card-resumo">
+        <div class="card-meta-header">
+          <span class="card-label">Reuniões Agendadas</span>
+          <span class="card-pct" id="pct-agendadas"></span>
+        </div>
+        <span class="card-valor" id="total-agendadas">—</span>
+        <div class="card-barra-container">
+          <div class="card-barra-wrap">
+            <div class="card-barra" id="barra-agendadas"></div>
+          </div>
+          <div class="meta-prop-tick meta-prop-tick-sm" id="tick-agendadas"></div>
+        </div>
+        <div class="meta-prop-row">
+          <span class="meta-info" id="info-agendadas"></span>
+          <span id="diff-agendadas"></span>
+        </div>
+        <div class="meta-prop-hint" id="hint-agendadas"></div>
+      </div>
+      <div class="card-resumo">
+        <div class="card-meta-header">
+          <span class="card-label">Reuniões Realizadas</span>
+          <span class="card-pct" id="pct-realizadas"></span>
+        </div>
+        <span class="card-valor" id="total-realizadas">—</span>
+        <div class="card-barra-container">
+          <div class="card-barra-wrap">
+            <div class="card-barra" id="barra-realizadas"></div>
+          </div>
+          <div class="meta-prop-tick meta-prop-tick-sm" id="tick-realizadas"></div>
+        </div>
+        <div class="meta-prop-row">
+          <span class="meta-info" id="info-realizadas"></span>
+          <span id="diff-realizadas"></span>
+        </div>
+        <div class="meta-prop-hint" id="hint-realizadas"></div>
+      </div>
+      <div class="card-resumo">
+        <div class="card-meta-header">
+          <span class="card-label">Clientes</span>
+          <span class="card-pct" id="pct-clientes"></span>
+        </div>
+        <span class="card-valor" id="total-clientes">—</span>
+        <div class="card-barra-container">
+          <div class="card-barra-wrap">
+            <div class="card-barra" id="barra-clientes"></div>
+          </div>
+          <div class="meta-prop-tick meta-prop-tick-sm" id="tick-clientes"></div>
+        </div>
+        <div class="meta-prop-row">
+          <span class="meta-info" id="info-clientes"></span>
+          <span id="diff-clientes"></span>
+        </div>
+        <div class="meta-prop-hint" id="hint-clientes"></div>
+      </div>
+    </div>
+    <div class="card-resumo destaque">
+      <span class="card-label">Faturamento Total</span>
+      <span class="card-valor" id="total-faturamento">—</span>
+      <div class="gauge-mini-wrap">
+        <canvas id="gauge-geral" width="200" height="110"></canvas>
+      </div>
+      <div id="meta-prop-geral" class="meta-prop-info"></div>
+    </div>
+  </section>
+
+  <!-- SEÇÃO: CARDS INDIVIDUAIS POR VENDEDOR -->
+  <section class="secao">
+    <h2 class="secao-titulo">Desempenho por Vendedor</h2>
+    <div class="vendedores-grid" id="vendedores-grid">
+      <!-- preenchido pelo JS -->
+    </div>
+  </section>
+
+  <!-- SEÇÃO: VISÃO GERAL (NOVAS MÉTRICAS) -->
+  <section class="secao">
+    <h2 class="secao-titulo">Visão Geral</h2>
+    <div class="visao-geral-grid">
+
+      <!-- Taxa de Conversão -->
+      <div class="card-metrica">
+        <h3>Taxa de Conversão</h3>
+        <p class="card-desc">Reuniões realizadas que viraram clientes</p>
+        <div class="taxa-grid" id="taxa-conversao-grid">
+          <!-- preenchido pelo JS -->
+        </div>
+      </div>
+
+      <!-- Ranking dos Vendedores -->
+      <div class="card-metrica">
+        <h3>Ranking de Faturamento</h3>
+        <p class="card-desc">Vendedores ordenados por faturamento no período</p>
+        <table class="tabela-ranking" id="tabela-ranking">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Vendedor</th>
+              <th>Faturamento</th>
+              <th>Clientes</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SEÇÃO: MÉTRICAS DE DESEMPENHO -->
+  <section class="secao">
+    <h2 class="secao-titulo">Métricas de Desempenho</h2>
+    <div class="desempenho-grid">
+
+      <!-- No-Show -->
+      <div class="card-metrica">
+        <h3>Taxa de No-Show</h3>
+        <p class="card-desc">Reuniões agendadas em que o cliente não apareceu</p>
+        <div class="noshow-global">
+          <span class="noshow-pct" id="noshow-pct-global">—</span>
+          <span class="noshow-label">da equipe no período</span>
+        </div>
+        <div class="noshow-lista" id="noshow-lista"></div>
+      </div>
+
+      <!-- Tempo médio de fechamento -->
+      <div class="card-metrica">
+        <h3>Tempo Médio de Fechamento</h3>
+        <p class="card-desc">Tempo médio da reunião até pagamento</p>
+        <div class="noshow-global">
+          <span class="noshow-pct" id="tempo-medio-global">—</span>
+          <span class="noshow-label">dias em média</span>
+        </div>
+        <div class="noshow-lista" id="tempo-lista"></div>
+      </div>
+
+      <!-- Ticket médio por closer -->
+      <div class="card-metrica">
+        <h3>Ticket Médio por Closer</h3>
+        <p class="card-desc">Valor médio dos contratos fechados por cada closer</p>
+        <div class="noshow-lista" id="ticket-lista"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SEÇÃO: EVOLUÇÃO AO LONGO DO TEMPO -->
+  <section class="secao">
+    <h2 class="secao-titulo">Evolução ao Longo do Tempo</h2>
+    <div class="evolucao-grid">
+      <div class="card-grafico">
+        <h3>Faturamento Mensal</h3>
+        <canvas id="grafico-faturamento"></canvas>
+      </div>
+      <div class="card-grafico">
+        <h3>Reuniões por Mês</h3>
+        <div id="legenda-reunioes" class="legenda-reunioes"></div>
+        <canvas id="grafico-reunioes"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    Dashboard Borges Macedo &mdash; Dados via Google Sheets
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
