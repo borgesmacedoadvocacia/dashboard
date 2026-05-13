@@ -1189,3 +1189,162 @@ function mostrarErro(msg) {
   if (grid) grid.innerHTML = `<div style="color:#ef4444;padding:1rem">${msg}</div>`;
   console.error(msg);
 }
+
+// ============================================================
+// MODAL — LISTA DE REUNIÕES
+// ============================================================
+
+let _modalLinhas = [];
+
+function abrirModalReunioes(tipo) {
+  _modalTipo = 'reunioes';
+  const cA   = CONFIG.SHEET_ATENDIMENTOS.COLS;
+  const dataInicio = new Date(document.getElementById('data-inicio').value + 'T00:00:00');
+  const dataFim    = new Date(document.getElementById('data-fim').value    + 'T23:59:59');
+  const atend      = window._rawAtend || [];
+
+  if (tipo === 'agendadas') {
+    _modalLinhas = atend.filter(r => {
+      const d = parseBRDate(r[cA.DATA_AGENDAMENTO]);
+      return d && d >= dataInicio && d <= dataFim;
+    });
+    document.getElementById('modal-titulo').textContent = 'Reuniões Agendadas no Período';
+  } else {
+    _modalLinhas = atend.filter(r => {
+      const d = parseBRDate(r[cA.DATA_ATENDIMENTO]);
+      return d && d >= dataInicio && d <= dataFim &&
+        r[cA.STATUS_ATENDIMENTO] === CONFIG.SHEET_ATENDIMENTOS.STATUS_REALIZADO;
+    });
+    document.getElementById('modal-titulo').textContent = 'Reuniões Realizadas no Período';
+  }
+
+  document.getElementById('modal-busca').value = '';
+  renderizarModalTabela(_modalLinhas);
+  document.getElementById('modal-reunioes').classList.add('aberto');
+}
+
+function renderizarModalTabela(linhas) {
+  const cA   = CONFIG.SHEET_ATENDIMENTOS.COLS;
+  const tbody = document.getElementById('modal-tbody');
+
+  if (linhas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:2rem">Nenhuma reunião encontrada.</td></tr>';
+    document.getElementById('modal-rodape').textContent = '0 registros';
+    return;
+  }
+
+  const statusClass = s => {
+    const sl = (s || '').toLowerCase();
+    if (sl.includes('realizado'))  return 'realizado';
+    if (sl.includes('no') && sl.includes('show')) return 'noshow';
+    if (sl.includes('agendado'))   return 'agendado';
+    return 'outro';
+  };
+
+  const findNomeReu = (r, tipo) => {
+    const keys  = tipo === 'Closer'
+      ? [cA.CLOSER, 'Closer', 'closer', 'CLOSER']
+      : ['SDR', 'Sdr', 'sdr'];
+    const raw   = keys.map(k => r[k] || '').find(v => v) || '';
+    const match = CONFIG.EQUIPE.find(m => m.tipo === tipo && m.nome.toLowerCase() === raw.toLowerCase());
+    return match ? match.nome : (raw || '—');
+  };
+
+  tbody.innerHTML = linhas.map(r => `
+    <tr>
+      <td>${r[cA.LEAD]             || '—'}</td>
+      <td>${r[cA.DATA_AGENDAMENTO] || '—'}</td>
+      <td>${r[cA.DATA_ATENDIMENTO] || '—'}</td>
+      <td>${findNomeReu(r, 'SDR')}</td>
+      <td>${findNomeReu(r, 'Closer')}</td>
+      <td><span class="modal-status ${statusClass(r[cA.STATUS_ATENDIMENTO])}">${r[cA.STATUS_ATENDIMENTO] || '—'}</span></td>
+    </tr>`).join('');
+
+  document.getElementById('modal-rodape').textContent = `${linhas.length} registro${linhas.length !== 1 ? 's' : ''}`;
+}
+
+let _modalTipo = 'reunioes';
+
+function filtrarModal() {
+  const termo     = document.getElementById('modal-busca').value.toLowerCase();
+  const filtradas = _modalLinhas.filter(r =>
+    Object.values(r).some(v => (v || '').toLowerCase().includes(termo))
+  );
+  if (_modalTipo === 'clientes') renderizarModalTabelaClientes(filtradas);
+  else renderizarModalTabela(filtradas);
+}
+
+function abrirModalClientes() {
+  _modalTipo = 'clientes';
+  const cC   = CONFIG.SHEET_CONTRATOS.COLS;
+  const dataInicio = new Date(document.getElementById('data-inicio').value + 'T00:00:00');
+  const dataFim    = new Date(document.getElementById('data-fim').value    + 'T23:59:59');
+
+  _modalLinhas = (window._rawContratos || []).filter(r => {
+    const d = parseBRDate(r[cC.DATA_FECHAMENTO]);
+    return d && d >= dataInicio && d <= dataFim;
+  });
+
+  document.getElementById('modal-titulo').textContent = 'Clientes Fechados no Período';
+
+  // Ajusta cabeçalho da tabela para contratos
+  document.querySelector('#modal-tabela thead tr').innerHTML = `
+    <th>Cliente</th>
+    <th>Data Reunião</th>
+    <th>Data Fechamento</th>
+    <th>SDR</th>
+    <th>Closer</th>
+    <th>Valor Entrada</th>`;
+
+  document.getElementById('modal-busca').value = '';
+  renderizarModalTabelaClientes(_modalLinhas);
+  document.getElementById('modal-reunioes').classList.add('aberto');
+}
+
+function renderizarModalTabelaClientes(linhas) {
+  const cC    = CONFIG.SHEET_CONTRATOS.COLS;
+  const tbody = document.getElementById('modal-tbody');
+
+  if (linhas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:2rem">Nenhum cliente encontrado.</td></tr>';
+    document.getElementById('modal-rodape').textContent = '0 registros';
+    return;
+  }
+
+  const findNome = (r, tipo) => {
+    const keys  = tipo === 'Closer'
+      ? [cC.CLOSER, 'Closer', 'closer', 'CLOSER']
+      : [cC.SDR,    'SDR',    'Sdr',    'sdr'];
+    const raw   = keys.map(k => r[k] || '').find(v => v) || '';
+    const match = CONFIG.EQUIPE.find(m => m.tipo === tipo && m.nome.toLowerCase() === raw.toLowerCase());
+    return match ? match.nome : (raw || '—');
+  };
+
+  tbody.innerHTML = linhas.map(r => {
+    const val = parseBRL(r[cC.HONORARIOS]);
+    return `<tr>
+      <td>${r[cC.CLIENTE]         || '—'}</td>
+      <td>${r[cC.DATA_REUNIAO]    || r['DATA DA REUNIÃO']    || '—'}</td>
+      <td>${r[cC.DATA_FECHAMENTO] || r['DATA DO FECHAMENTO'] || '—'}</td>
+      <td>${findNome(r, 'SDR')}</td>
+      <td>${findNome(r, 'Closer')}</td>
+      <td style="color:#22c55e;font-weight:600">${FMT_BRL.format(val)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modal-rodape').textContent = `${linhas.length} cliente${linhas.length !== 1 ? 's' : ''}`;
+}
+
+function fecharModal() {
+  document.getElementById('modal-reunioes').classList.remove('aberto');
+  // Restaura cabeçalho padrão (reuniões) ao fechar
+  document.querySelector('#modal-tabela thead tr').innerHTML = `
+    <th>Lead</th>
+    <th>Data Agendamento</th>
+    <th>Data Atendimento</th>
+    <th>SDR</th>
+    <th>Closer</th>
+    <th>Status</th>`;
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });

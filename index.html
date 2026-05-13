@@ -74,7 +74,7 @@
   <!-- CARDS DE RESUMO GERAL -->
   <section class="resumo-geral">
     <div class="resumo-coluna-esq">
-      <div class="card-resumo">
+      <div class="card-resumo" onclick="abrirModalReunioes('agendadas')" title="Ver lista de reuniões agendadas">
         <div class="card-meta-header">
           <span class="card-label">Reuniões Agendadas</span>
           <span class="card-pct" id="pct-agendadas"></span>
@@ -93,7 +93,7 @@
         <div class="meta-prop-hint" id="hint-agendadas"></div>
         <div class="card-comp" id="comp-agendadas"></div>
       </div>
-      <div class="card-resumo">
+      <div class="card-resumo" onclick="abrirModalReunioes('realizadas')" title="Ver lista de reuniões realizadas">
         <div class="card-meta-header">
           <span class="card-label">Reuniões Realizadas</span>
           <span class="card-pct" id="pct-realizadas"></span>
@@ -112,7 +112,7 @@
         <div class="meta-prop-hint" id="hint-realizadas"></div>
         <div class="card-comp" id="comp-realizadas"></div>
       </div>
-      <div class="card-resumo">
+      <div class="card-resumo" onclick="abrirModalClientes()" title="Ver lista de clientes fechados">
         <div class="card-meta-header">
           <span class="card-label">Clientes</span>
           <span class="card-pct" id="pct-clientes"></span>
@@ -237,6 +237,35 @@
       </div>
     </div>
   </section>
+
+  <!-- MODAL: LISTA DE REUNIÕES -->
+  <div class="modal-overlay" id="modal-reunioes" onclick="fecharModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modal-titulo">Reuniões</h3>
+        <button class="modal-fechar" onclick="fecharModal()">✕</button>
+      </div>
+      <div class="modal-filtros">
+        <input class="modal-busca" id="modal-busca" type="text" placeholder="Buscar por nome, closer, SDR ou status…" oninput="filtrarModal()" />
+      </div>
+      <div class="modal-table-wrap">
+        <table class="modal-tabela" id="modal-tabela">
+          <thead>
+            <tr>
+              <th>Lead</th>
+              <th>Data Agendamento</th>
+              <th>Data Atendimento</th>
+              <th>SDR</th>
+              <th>Closer</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="modal-tbody"></tbody>
+        </table>
+      </div>
+      <div class="modal-rodape" id="modal-rodape"></div>
+    </div>
+  </div>
 
   <footer class="footer">
     Dashboard Borges Macedo &mdash; Dados via Google Sheets

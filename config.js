@@ -19,6 +19,7 @@ const CONFIG = {
       DATA_AGENDAMENTO:   'Data do Agendamento',
       DATA_ATENDIMENTO:   'Data do Atendimento',
       STATUS_ATENDIMENTO: 'Status do Atendimento',
+      LEAD:               'Lead',
     },
     STATUS_REALIZADO: 'Realizado',
   },
@@ -34,6 +35,7 @@ const CONFIG = {
       DATA_REUNIAO:    'DATA DA REUNIÃO',
       DATA_FECHAMENTO: 'DATA DO FECHAMENTO',
       HONORARIOS:      'VALOR DA ENTRADA',
+      CLIENTE:         'CONTATO (QUEM ESTÁ EM CONTATO COM O ESCRITÓRIO)',
     },
   },
 
