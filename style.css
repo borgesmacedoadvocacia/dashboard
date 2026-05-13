@@ -385,6 +385,14 @@ body {
   margin-top: 0.15rem;
 }
 .meta-prop-hint strong { color: var(--azul-claro); }
+.card-comp {
+  font-size: 0.68rem;
+  color: var(--texto-muted);
+  margin-top: 0.4rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.card-comp span { font-weight: 700; }
 
 /* ===== EVOLUÇÃO ===== */
 .evolucao-grid {
@@ -501,6 +509,15 @@ body {
 }
 .cv-taxa-label { color: var(--texto-muted); }
 .cv-taxa-val { font-weight: 700; color: var(--azul-claro); }
+.cv-comp {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem;
+  align-items: center;
+  font-size: 0.68rem; color: var(--texto-muted);
+  margin-top: 0.6rem; padding-top: 0.5rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.cv-comp-label { color: var(--texto-muted); margin-right: 0.1rem; }
+.cv-comp-item { white-space: nowrap; }
 
 /* ===== FOOTER ===== */
 .footer {

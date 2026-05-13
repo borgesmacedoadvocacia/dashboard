@@ -492,6 +492,60 @@ function calcMetaProp(meta) {
   };
 }
 
+// ---- COMPARAÇÃO COM PERÍODO ANTERIOR ----
+function periodoAnterior() {
+  const iniStr = document.getElementById('data-inicio').value;
+  const fimStr = document.getElementById('data-fim').value;
+  if (!iniStr || !fimStr) return null;
+
+  const di = new Date(iniStr + 'T00:00:00');
+  const df = new Date(fimStr + 'T23:59:59');
+
+  const recuar = (ano, mes, dia) => {
+    const mesAnt = mes === 0 ? 11 : mes - 1;
+    const anoAnt = mes === 0 ? ano - 1 : ano;
+    const ultimo = new Date(anoAnt, mesAnt + 1, 0).getDate();
+    return new Date(anoAnt, mesAnt, Math.min(dia, ultimo));
+  };
+
+  const ini = recuar(di.getFullYear(), di.getMonth(), di.getDate());
+  const fim = recuar(df.getFullYear(), df.getMonth(), df.getDate());
+  fim.setHours(23, 59, 59);
+
+  const label = ini.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
+  return { ini, fim, label: label.charAt(0).toUpperCase() + label.slice(1) };
+}
+
+function calcularTotaisParaPeriodo(ini, fim) {
+  const cA = CONFIG.SHEET_ATENDIMENTOS.COLS;
+  const cC = CONFIG.SHEET_CONTRATOS.COLS;
+  const atend     = window._rawAtend     || [];
+  const contratos = window._rawContratos || [];
+
+  const contratosP = contratos.filter(r => {
+    const d = parseBRDate(r[cC.DATA_FECHAMENTO]);
+    return d && d >= ini && d <= fim;
+  });
+
+  return {
+    agendadas:   atend.filter(r => { const d = parseBRDate(r[cA.DATA_AGENDAMENTO]); return d && d >= ini && d <= fim; }).length,
+    realizadas:  atend.filter(r => { const d = parseBRDate(r[cA.DATA_ATENDIMENTO]); return d && d >= ini && d <= fim && r[cA.STATUS_ATENDIMENTO] === CONFIG.SHEET_ATENDIMENTOS.STATUS_REALIZADO; }).length,
+    clientes:    contratosP.length,
+    faturamento: contratosP.reduce((s, r) => s + parseBRL(r[cC.HONORARIOS]), 0),
+  };
+}
+
+function badgeComp(atual, anterior, label, isCurrency = false) {
+  const delta = atual - anterior;
+  const cor   = delta >= 0 ? '#22c55e' : '#ef4444';
+  const seta  = delta >= 0 ? '↑' : '↓';
+  const abs   = Math.abs(delta);
+  const texto = isCurrency
+    ? FMT_BRL.format(abs)
+    : abs.toString();
+  return `<span style="color:${cor}">${seta} ${texto}</span> vs. ${label}`;
+}
+
 // ---- RESUMO GERAL ----
 function renderizarResumoGeral(totais) {
   setText('total-agendadas',   totais.agendadas);
@@ -545,6 +599,20 @@ function renderizarResumoGeral(totais) {
 
   const maxFat = CONFIG.META_TOTAL || 80000;
   desenharGauge('gauge-geral', totais.faturamento, maxFat);
+
+  // Comparação com período correspondente do mês anterior
+  const ant = periodoAnterior();
+  if (ant) {
+    const prev = calcularTotaisParaPeriodo(ant.ini, ant.fim);
+    const setComp = (id, atual, anterior, isCurrency) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = badgeComp(atual, anterior, ant.label, isCurrency);
+    };
+    setComp('comp-agendadas',   totais.agendadas,   prev.agendadas,   false);
+    setComp('comp-realizadas',  totais.realizadas,  prev.realizadas,  false);
+    setComp('comp-clientes',    totais.clientes,    prev.clientes,    false);
+    setComp('comp-faturamento', totais.faturamento, prev.faturamento, true);
+  }
 
   // Meta proporcional ao dia atual
   const mp   = calcMetaProp(CONFIG.META_TOTAL);
@@ -734,6 +802,24 @@ function opcoesGrafico(prefixo) {
   };
 }
 
+function calcularVendedorPeriodo(nLow, isSdr, ini, fim) {
+  const cA = CONFIG.SHEET_ATENDIMENTOS.COLS;
+  const cC = CONFIG.SHEET_CONTRATOS.COLS;
+  const colAtend   = isSdr ? 'SDR' : cA.CLOSER;
+  const colContrat = isSdr ? 'SDR' : cC.CLOSER;
+  const atend      = (window._rawAtend || []).filter(r => (r[colAtend] || '').toLowerCase() === nLow);
+  const contratosP = (window._rawContratos || []).filter(r => {
+    const d = parseBRDate(r[cC.DATA_FECHAMENTO]);
+    return (r[colContrat] || '').toLowerCase() === nLow && d && d >= ini && d <= fim;
+  });
+  return {
+    agendadas:   atend.filter(r => { const d = parseBRDate(r[cA.DATA_AGENDAMENTO]); return d && d >= ini && d <= fim; }).length,
+    realizadas:  atend.filter(r => { const d = parseBRDate(r[cA.DATA_ATENDIMENTO]); return d && d >= ini && d <= fim && r[cA.STATUS_ATENDIMENTO] === CONFIG.SHEET_ATENDIMENTOS.STATUS_REALIZADO; }).length,
+    clientes:    contratosP.length,
+    faturamento: contratosP.reduce((s, r) => s + parseBRL(r[cC.HONORARIOS]), 0),
+  };
+}
+
 // ---- CARDS DE VENDEDOR ----
 function renderizarCardsVendedor(vends) {
   const grid = document.getElementById('vendedores-grid');
@@ -748,6 +834,32 @@ function renderizarCardsVendedor(vends) {
     const diffV   = v.faturamento - mp.valor;
     const sinalV  = diffV >= 0 ? '▲' : '▼';
     const corDiffV = diffV >= 0 ? '#22c55e' : '#ef4444';
+
+    const ant  = periodoAnterior();
+    const prev = ant ? calcularVendedorPeriodo(v.nome.toLowerCase(), v.tipo === 'SDR', ant.ini, ant.fim) : null;
+
+    const compItem = (atual, anterior, label) => {
+      const delta = atual - anterior;
+      const cor   = delta >= 0 ? '#22c55e' : '#ef4444';
+      const seta  = delta >= 0 ? '↑' : '↓';
+      return `<span class="cv-comp-item"><span style="color:${cor};font-weight:700">${seta}${Math.abs(delta)}</span> ${label}</span>`;
+    };
+    const compFat = (atual, anterior) => {
+      const delta = atual - anterior;
+      const cor   = delta >= 0 ? '#22c55e' : '#ef4444';
+      const seta  = delta >= 0 ? '↑' : '↓';
+      const abs   = Math.abs(delta);
+      const txt   = abs >= 1000 ? 'R$' + (abs/1000).toFixed(1).replace('.',',') + 'k' : FMT_BRL.format(abs);
+      return `<span class="cv-comp-item"><span style="color:${cor};font-weight:700">${seta}${txt}</span> fat.</span>`;
+    };
+    const compHTML = prev ? `
+      <div class="cv-comp">
+        <span class="cv-comp-label">vs. ${ant.label}:</span>
+        ${compItem(v.reunioesAgendadas, prev.agendadas, 'agend.')}
+        ${compItem(v.reunioesRealizadas, prev.realizadas, 'realiz.')}
+        ${compItem(v.clientes, prev.clientes, 'clientes')}
+        ${compFat(v.faturamento, prev.faturamento)}
+      </div>` : '';
 
     const canvasId = `gauge-v-${idx}`;
     const card     = document.createElement('div');
@@ -796,7 +908,8 @@ function renderizarCardsVendedor(vends) {
         <div class="meta-prop-hint">
           Meta para hoje (${mp.diaUtil}º d.u. de ${mp.totalUtils}): <strong>${FMT_BRL.format(mp.valor)}</strong>
         </div>
-      </div>`;
+      </div>
+      ${compHTML}`;
 
     grid.appendChild(card);
     setTimeout(() => desenharGauge(canvasId, v.faturamento, v.meta), 50);
