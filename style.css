@@ -433,6 +433,8 @@ body {
   flex-shrink: 0;
 }
 .legenda-linha.tracejada { border-top-style: dashed; }
+.legenda-toggle:hover { opacity: 0.8; }
+.legenda-hidden { opacity: 0.35; text-decoration: line-through; }
 
 /* ===== CARDS DE VENDEDOR ===== */
 .vendedores-grid {

@@ -873,25 +873,6 @@ function renderizarGraficos(vends) {
     tension: 0.4, pointRadius: 3, fill: false,
   }));
 
-  // Legenda customizada: 3 colunas (por pessoa), ag em cima / re embaixo
-  const legendEl = document.getElementById('legenda-reunioes');
-  if (legendEl) {
-    legendEl.innerHTML = vends.map((v, i) => {
-      const cor = cores[i % cores.length];
-      return `
-        <div class="legenda-col">
-          <div class="legenda-item">
-            <span class="legenda-linha tracejada" style="border-color:${cor}aa"></span>
-            <span>${v.nome} (agendadas)</span>
-          </div>
-          <div class="legenda-item">
-            <span class="legenda-linha" style="border-color:${cor}"></span>
-            <span>${v.nome} (realizadas)</span>
-          </div>
-        </div>`;
-    }).join('');
-  }
-
   const opReunioes = opcoesGrafico('');
   opReunioes.plugins.legend = { display: false };
 
@@ -901,6 +882,37 @@ function renderizarGraficos(vends) {
     data: { labels: meses, datasets: [...datasetsAg, ...datasetsRe] },
     options: opReunioes,
   });
+
+  // Legenda customizada clicável: toggle de dataset ao clicar
+  const legendEl = document.getElementById('legenda-reunioes');
+  if (legendEl) {
+    legendEl.innerHTML = vends.map((v, i) => {
+      const cor = cores[i % cores.length];
+      const idxAg = i;
+      const idxRe = vends.length + i;
+      return `
+        <div class="legenda-col">
+          <div class="legenda-item legenda-toggle" data-idx="${idxAg}" style="cursor:pointer">
+            <span class="legenda-linha tracejada" style="border-color:${cor}aa"></span>
+            <span>${v.nome} (agendadas)</span>
+          </div>
+          <div class="legenda-item legenda-toggle" data-idx="${idxRe}" style="cursor:pointer">
+            <span class="legenda-linha" style="border-color:${cor}"></span>
+            <span>${v.nome} (realizadas)</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    legendEl.querySelectorAll('.legenda-toggle').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx  = parseInt(el.dataset.idx);
+        const meta = grafReunioes.getDatasetMeta(idx);
+        meta.hidden = !meta.hidden;
+        grafReunioes.update();
+        el.classList.toggle('legenda-hidden', meta.hidden);
+      });
+    });
+  }
 }
 
 function opcoesGrafico(prefixo) {
