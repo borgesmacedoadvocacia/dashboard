@@ -349,7 +349,47 @@ async function buscarDoSheets() {
     };
   });
 
-  return { vendedores, totaisGlobais };
+  // Vendedores históricos: closers e SDRs nos contratos do período que não estão no EQUIPE atual
+  const nomesEquipe = new Set(cfg.EQUIPE.map(m => m.nome.toLowerCase()));
+  const historicos  = {};
+  const addHistorico = (nome, tipo, r) => {
+    const n = nome.trim();
+    if (!n || nomesEquipe.has(n.toLowerCase())) return;
+    if (!historicos[n]) historicos[n] = { faturamento: 0, clientes: 0, tipo };
+    historicos[n].faturamento += parseBRL(r[cC.HONORARIOS]);
+    historicos[n].clientes++;
+  };
+  contratosNoPeriodo.forEach(r => {
+    addHistorico(r[cC.CLOSER] || r['Closer'] || '', 'Closer', r);
+    addHistorico(r[cC.SDR]    || r['SDR']    || '', 'SDR',    r);
+  });
+  const vendedoresHistoricos = Object.entries(historicos).map(([nome, d]) => {
+    const nLow     = nome.toLowerCase();
+    const isSdr    = d.tipo === 'SDR';
+    const colAtend = isSdr ? 'SDR' : cA.CLOSER;
+    const meusAtend = atendimentos.filter(r => (r[colAtend] || '').toLowerCase() === nLow);
+    const agendadas  = meusAtend.filter(r => {
+      const dt = parseBRDate(r[cA.DATA_AGENDAMENTO]);
+      return dt && dt >= dataInicio && dt <= dataFim;
+    }).length;
+    const realizadas = meusAtend.filter(r => {
+      const dt = parseBRDate(r[cA.DATA_ATENDIMENTO]);
+      return dt && dt >= dataInicio && dt <= dataFim &&
+        r[cA.STATUS_ATENDIMENTO] === cfg.SHEET_ATENDIMENTOS.STATUS_REALIZADO;
+    }).length;
+    return {
+      nome,
+      tipo:               d.tipo + ' (hist.)',
+      reunioesAgendadas:  agendadas,
+      reunioesRealizadas: realizadas,
+      clientes:           d.clientes,
+      faturamento:        d.faturamento,
+      meta:               null,
+      historico:          calcularHistorico(nLow, isSdr, atendimentos, contratos, dataFim),
+    };
+  });
+
+  return { vendedores: [...vendedores, ...vendedoresHistoricos], totaisGlobais };
 }
 
 function calcularHistorico(nLow, isSdr, atendimentos, contratos, dataRef) {
@@ -405,7 +445,7 @@ function renderizar(vendedores, totaisGlobais) {
   }
   renderizarResumoGeral(totaisGlobais);
   renderizarTaxaConversao(vendedores);
-  renderizarRanking(vendedores);
+  renderizarRanking();
   renderizarMetas(vendedores);
   renderizarNoShow();
   renderizarTempoFechamento();
@@ -690,11 +730,37 @@ function renderizarTaxaConversao(vends) {
 }
 
 // ---- RANKING ----
-function renderizarRanking(vends) {
-  const sorted = [...vends].sort((a, b) => b.faturamento - a.faturamento);
-  const tbody  = document.querySelector('#tabela-ranking tbody');
+function renderizarRanking() {
+  const tbody = document.querySelector('#tabela-ranking tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
-  sorted.forEach((v, i) => {
+
+  const cC         = CONFIG.SHEET_CONTRATOS.COLS;
+  const dataInicio = new Date(document.getElementById('data-inicio').value + 'T00:00:00');
+  const dataFim    = new Date(document.getElementById('data-fim').value    + 'T23:59:59');
+
+  // Agrupa todos os contratos do período por closer (qualquer equipe, qualquer ano)
+  const porCloser = {};
+  (window._rawContratos || []).forEach(r => {
+    const d = parseBRDate(r[cC.DATA_FECHAMENTO]);
+    if (!d || d < dataInicio || d > dataFim) return;
+    const nome = (r[cC.CLOSER] || r['Closer'] || '').trim();
+    if (!nome) return;
+    if (!porCloser[nome]) porCloser[nome] = { faturamento: 0, clientes: 0 };
+    porCloser[nome].faturamento += parseBRL(r[cC.HONORARIOS]);
+    porCloser[nome].clientes++;
+  });
+
+  const ranking = Object.entries(porCloser)
+    .map(([nome, d]) => ({ nome, ...d }))
+    .sort((a, b) => b.faturamento - a.faturamento);
+
+  if (ranking.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#64748b">Sem dados no período</td></tr>';
+    return;
+  }
+
+  ranking.forEach((v, i) => {
     const tr = document.createElement('tr');
     if (i === 0) tr.classList.add('rank-1');
     tr.innerHTML = `
@@ -886,33 +952,29 @@ function renderizarCardsVendedor(vends) {
   const grid = document.getElementById('vendedores-grid');
   grid.innerHTML = '';
 
+  const ant = periodoAnterior();
+
+  const compItem = (atual, anterior, label) => {
+    const delta = atual - anterior;
+    const cor   = delta >= 0 ? '#22c55e' : '#ef4444';
+    const seta  = delta >= 0 ? '↑' : '↓';
+    return `<span class="cv-comp-item"><span style="color:${cor};font-weight:700">${seta}${Math.abs(delta)}</span> ${label}</span>`;
+  };
+  const compFat = (atual, anterior) => {
+    const delta = atual - anterior;
+    const cor   = delta >= 0 ? '#22c55e' : '#ef4444';
+    const seta  = delta >= 0 ? '↑' : '↓';
+    const abs   = Math.abs(delta);
+    const txt   = abs >= 1000 ? 'R$' + (abs/1000).toFixed(1).replace('.',',') + 'k' : FMT_BRL.format(abs);
+    return `<span class="cv-comp-item"><span style="color:${cor};font-weight:700">${seta}${txt}</span> fat.</span>`;
+  };
+
   vends.forEach((v, idx) => {
-    const pctMeta = Math.min((v.faturamento / v.meta) * 100, 100);
-    const corMeta = pctMeta >= 80 ? '#22c55e' : pctMeta >= 50 ? '#f59e0b' : '#ef4444';
-    const taxa    = v.reunioesRealizadas > 0
-      ? ((v.clientes / v.reunioesRealizadas) * 100).toFixed(1) : '0.0';
-    const mp      = calcMetaProp(v.meta);
-    const diffV   = v.faturamento - mp.valor;
-    const sinalV  = diffV >= 0 ? '▲' : '▼';
-    const corDiffV = diffV >= 0 ? '#22c55e' : '#ef4444';
+    const isHistorico = v.meta === null;
+    const card        = document.createElement('div');
+    card.className    = 'card-vendedor' + (isHistorico ? ' card-historico' : '');
 
-    const ant  = periodoAnterior();
-    const prev = ant ? calcularVendedorPeriodo(v.nome.toLowerCase(), v.tipo === 'SDR', ant.ini, ant.fim) : null;
-
-    const compItem = (atual, anterior, label) => {
-      const delta = atual - anterior;
-      const cor   = delta >= 0 ? '#22c55e' : '#ef4444';
-      const seta  = delta >= 0 ? '↑' : '↓';
-      return `<span class="cv-comp-item"><span style="color:${cor};font-weight:700">${seta}${Math.abs(delta)}</span> ${label}</span>`;
-    };
-    const compFat = (atual, anterior) => {
-      const delta = atual - anterior;
-      const cor   = delta >= 0 ? '#22c55e' : '#ef4444';
-      const seta  = delta >= 0 ? '↑' : '↓';
-      const abs   = Math.abs(delta);
-      const txt   = abs >= 1000 ? 'R$' + (abs/1000).toFixed(1).replace('.',',') + 'k' : FMT_BRL.format(abs);
-      return `<span class="cv-comp-item"><span style="color:${cor};font-weight:700">${seta}${txt}</span> fat.</span>`;
-    };
+    const prev     = ant ? calcularVendedorPeriodo(v.nome.toLowerCase(), v.tipo === 'SDR', ant.ini, ant.fim) : null;
     const compHTML = prev ? `
       <div class="cv-comp">
         <span class="cv-comp-label">vs. ${ant.label}:</span>
@@ -922,58 +984,67 @@ function renderizarCardsVendedor(vends) {
         ${compFat(v.faturamento, prev.faturamento)}
       </div>` : '';
 
-    const canvasId = `gauge-v-${idx}`;
-    const card     = document.createElement('div');
-    card.className = 'card-vendedor';
-    card.innerHTML = `
-      <div class="cv-nome">
-        ${v.nome}
-        <span class="cv-cargo cv-cargo-${v.tipo.toLowerCase()}">${v.tipo}</span>
-      </div>
-      <div class="cv-stats">
-        <div class="cv-stat">
-          <span class="cv-stat-label">Reuniões Agendadas</span>
-          <span class="cv-stat-val">${v.reunioesAgendadas}</span>
+    if (isHistorico) {
+      const taxaH = v.reunioesRealizadas > 0 ? ((v.clientes / v.reunioesRealizadas) * 100).toFixed(1) : '0.0';
+      card.innerHTML = `
+        <div class="cv-nome">
+          ${v.nome}
+          <span class="cv-cargo" style="background:rgba(100,116,139,0.15);color:#94a3b8">${v.tipo}</span>
         </div>
-        <div class="cv-stat">
-          <span class="cv-stat-label">Reuniões Realizadas</span>
-          <span class="cv-stat-val">${v.reunioesRealizadas > 0 ? v.reunioesRealizadas : '—'}</span>
+        <div class="cv-stats">
+          <div class="cv-stat"><span class="cv-stat-label">Reuniões Agendadas</span><span class="cv-stat-val">${v.reunioesAgendadas}</span></div>
+          <div class="cv-stat"><span class="cv-stat-label">Reuniões Realizadas</span><span class="cv-stat-val">${v.reunioesRealizadas > 0 ? v.reunioesRealizadas : '—'}</span></div>
+          <div class="cv-stat"><span class="cv-stat-label">Clientes</span><span class="cv-stat-val">${v.clientes}</span></div>
+          <div class="cv-stat"><span class="cv-stat-label">Taxa de Conversão</span><span class="cv-stat-val azul">${taxaH}%</span></div>
         </div>
-        <div class="cv-stat">
-          <span class="cv-stat-label">Clientes</span>
-          <span class="cv-stat-val">${v.clientes}</span>
+        <div class="cv-fat-historico">
+          <span class="cv-fat-label">Faturamento</span>
+          <span class="cv-fat-val" style="color:#22c55e">${FMT_BRL.format(v.faturamento)}</span>
         </div>
-        <div class="cv-stat">
-          <span class="cv-stat-label">Taxa de Conversão</span>
-          <span class="cv-stat-val azul">${taxa}%</span>
+        ${compHTML}`;
+    } else {
+      const pctMeta  = Math.min((v.faturamento / v.meta) * 100, 100);
+      const corMeta  = pctMeta >= 80 ? '#22c55e' : pctMeta >= 50 ? '#f59e0b' : '#ef4444';
+      const taxa     = v.reunioesRealizadas > 0 ? ((v.clientes / v.reunioesRealizadas) * 100).toFixed(1) : '0.0';
+      const mp       = calcMetaProp(v.meta);
+      const diffV    = v.faturamento - mp.valor;
+      const sinalV   = diffV >= 0 ? '▲' : '▼';
+      const corDiffV = diffV >= 0 ? '#22c55e' : '#ef4444';
+      const canvasId = `gauge-v-${idx}`;
+
+      card.innerHTML = `
+        <div class="cv-nome">
+          ${v.nome}
+          <span class="cv-cargo cv-cargo-${v.tipo.toLowerCase()}">${v.tipo}</span>
         </div>
-      </div>
-      <div class="cv-gauge-wrap">
-        <canvas id="${canvasId}" height="110"></canvas>
-      </div>
-      <div class="cv-meta">
-        <div class="cv-meta-header">
-          <span class="cv-meta-label">Meta de Faturamento</span>
-          <span class="cv-meta-pct" style="color:${corMeta}">${FMT_PCT(pctMeta)} da meta</span>
+        <div class="cv-stats">
+          <div class="cv-stat"><span class="cv-stat-label">Reuniões Agendadas</span><span class="cv-stat-val">${v.reunioesAgendadas}</span></div>
+          <div class="cv-stat"><span class="cv-stat-label">Reuniões Realizadas</span><span class="cv-stat-val">${v.reunioesRealizadas > 0 ? v.reunioesRealizadas : '—'}</span></div>
+          <div class="cv-stat"><span class="cv-stat-label">Clientes</span><span class="cv-stat-val">${v.clientes}</span></div>
+          <div class="cv-stat"><span class="cv-stat-label">Taxa de Conversão</span><span class="cv-stat-val azul">${taxa}%</span></div>
         </div>
-        <div class="cv-meta-barra-container">
-          <div class="cv-meta-barra-wrap">
-            <div class="cv-meta-barra" style="width:${pctMeta}%;background:${corMeta}"></div>
+        <div class="cv-gauge-wrap"><canvas id="${canvasId}" height="110"></canvas></div>
+        <div class="cv-meta">
+          <div class="cv-meta-header">
+            <span class="cv-meta-label">Meta de Faturamento</span>
+            <span class="cv-meta-pct" style="color:${corMeta}">${FMT_PCT(pctMeta)} da meta</span>
           </div>
-          <div class="meta-prop-tick meta-prop-tick-sm" style="left:${Math.min((mp.valor/v.meta)*100,100)}%" title="Meta para hoje"></div>
+          <div class="cv-meta-barra-container">
+            <div class="cv-meta-barra-wrap"><div class="cv-meta-barra" style="width:${pctMeta}%;background:${corMeta}"></div></div>
+            <div class="meta-prop-tick meta-prop-tick-sm" style="left:${Math.min((mp.valor/v.meta)*100,100)}%" title="Meta para hoje"></div>
+          </div>
+          <div class="meta-prop-row" style="margin-top:0.3rem">
+            <span style="font-size:0.7rem;color:#64748b">${FMT_BRL.format(v.faturamento)} de ${FMT_BRL.format(v.meta)}</span>
+            <span style="font-size:0.7rem;color:${corDiffV};font-weight:600">${sinalV} ${FMT_BRL.format(Math.abs(diffV))}</span>
+          </div>
+          <div class="meta-prop-hint">Meta para hoje (${mp.diaUtil}º d.u. de ${mp.totalUtils}): <strong>${FMT_BRL.format(mp.valor)}</strong></div>
         </div>
-        <div class="meta-prop-row" style="margin-top:0.3rem">
-          <span style="font-size:0.7rem;color:#64748b">${FMT_BRL.format(v.faturamento)} de ${FMT_BRL.format(v.meta)}</span>
-          <span style="font-size:0.7rem;color:${corDiffV};font-weight:600">${sinalV} ${FMT_BRL.format(Math.abs(diffV))}</span>
-        </div>
-        <div class="meta-prop-hint">
-          Meta para hoje (${mp.diaUtil}º d.u. de ${mp.totalUtils}): <strong>${FMT_BRL.format(mp.valor)}</strong>
-        </div>
-      </div>
-      ${compHTML}`;
+        ${compHTML}`;
+
+      setTimeout(() => desenharGauge(canvasId, v.faturamento, v.meta), 50);
+    }
 
     grid.appendChild(card);
-    setTimeout(() => desenharGauge(canvasId, v.faturamento, v.meta), 50);
   });
 }
 
