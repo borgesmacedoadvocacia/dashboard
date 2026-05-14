@@ -5,6 +5,15 @@
 const FMT_BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const FMT_PCT = (n) => n.toFixed(1) + '%';
 
+const TZ = 'America/Bahia';
+
+// Retorna um Date com ano/mês/dia de "agora" no fuso de Salvador/BA
+function hojeBA() {
+  const str = new Date().toLocaleDateString('en-CA', { timeZone: TZ }); // 'YYYY-MM-DD'
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 let grafFaturamento = null;
 let grafReunioes    = null;
 
@@ -19,15 +28,15 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 
 const PRESETS = {
-  'hoje':         () => { const h = new Date(); return [h, h]; },
-  'ontem':        () => { const d = new Date(); d.setDate(d.getDate()-1); return [d, d]; },
-  'esta-semana':  () => { const h = new Date(), d = new Date(h); d.setDate(h.getDate() - h.getDay()); return [d, h]; },
-  'mes-ate-agora':() => { const h = new Date(); return [new Date(h.getFullYear(), h.getMonth(), 1), h]; },
-  'este-mes':     () => { const h = new Date(); return [new Date(h.getFullYear(), h.getMonth(), 1), new Date(h.getFullYear(), h.getMonth()+1, 0)]; },
-  '7dias':        () => { const h = new Date(), d = new Date(h); d.setDate(h.getDate()-6); return [d, h]; },
-  '30dias':       () => { const h = new Date(), d = new Date(h); d.setDate(h.getDate()-29); return [d, h]; },
-  'este-ano':     () => { const h = new Date(); return [new Date(h.getFullYear(), 0, 1), h]; },
-  'mes-passado':  () => { const h = new Date(); return [new Date(h.getFullYear(), h.getMonth()-1, 1), new Date(h.getFullYear(), h.getMonth(), 0)]; },
+  'hoje':         () => { const h = hojeBA(); return [h, h]; },
+  'ontem':        () => { const d = hojeBA(); d.setDate(d.getDate()-1); return [d, d]; },
+  'esta-semana':  () => { const h = hojeBA(), d = new Date(h); d.setDate(h.getDate() - h.getDay()); return [d, h]; },
+  'mes-ate-agora':() => { const h = hojeBA(); return [new Date(h.getFullYear(), h.getMonth(), 1), h]; },
+  'este-mes':     () => { const h = hojeBA(); return [new Date(h.getFullYear(), h.getMonth(), 1), new Date(h.getFullYear(), h.getMonth()+1, 0)]; },
+  '7dias':        () => { const h = hojeBA(), d = new Date(h); d.setDate(h.getDate()-6); return [d, h]; },
+  '30dias':       () => { const h = hojeBA(), d = new Date(h); d.setDate(h.getDate()-29); return [d, h]; },
+  'este-ano':     () => { const h = hojeBA(); return [new Date(h.getFullYear(), 0, 1), h]; },
+  'mes-passado':  () => { const h = hojeBA(); return [new Date(h.getFullYear(), h.getMonth()-1, 1), new Date(h.getFullYear(), h.getMonth(), 0)]; },
 };
 
 const PRESET_LABELS = {
@@ -73,7 +82,7 @@ function iniciarDatePicker() {
         document.getElementById('date-custom').style.display = 'block';
         label.textContent = PRESET_LABELS['fixo'];
         // preenche inputs com datas atuais
-        const h = new Date();
+        const h = hojeBA();
         const ini = new Date(h.getFullYear(), h.getMonth(), 1);
         document.getElementById('data-inicio').value = toInputDate(ini);
         document.getElementById('data-fim').value    = toInputDate(h);
@@ -97,8 +106,8 @@ function iniciarDatePicker() {
     const ini = document.getElementById('data-inicio').value;
     const fim = document.getElementById('data-fim').value;
     if (!ini || !fim) return;
-    const fmtIni = new Date(ini + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
-    const fmtFim = new Date(fim + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+    const fmtIni = new Date(ini + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric', timeZone: TZ });
+    const fmtFim = new Date(fim + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric', timeZone: TZ });
     label.textContent = `${fmtIni} – ${fmtFim}`;
     btn.classList.remove('open');
     panel.classList.remove('open');
@@ -119,7 +128,7 @@ async function carregar() {
     const { vendedores, totaisGlobais } = await buscarDoSheets();
     renderizar(vendedores, totaisGlobais);
     document.getElementById('ultima-atualizacao').textContent =
-      new Date().toLocaleString('pt-BR');
+      new Date().toLocaleString('pt-BR', { timeZone: TZ });
   } catch (e) {
     console.error('Erro ao carregar dados:', e);
     mostrarErro('Não foi possível carregar os dados. Verifique se as planilhas estão com acesso "qualquer pessoa com o link".');
@@ -405,7 +414,7 @@ function calcularHistorico(nLow, isSdr, atendimentos, contratos, dataRef) {
   for (let i = numMeses - 1; i >= 0; i--) {
     const ini = new Date(dataRef.getFullYear(), dataRef.getMonth() - i, 1);
     const fim = new Date(dataRef.getFullYear(), dataRef.getMonth() - i + 1, 0, 23, 59, 59);
-    const mesLabel = ini.toLocaleString('pt-BR', { month: 'short', year: '2-digit' })
+    const mesLabel = ini.toLocaleString('pt-BR', { month: 'short', year: '2-digit', timeZone: TZ })
       .replace('.', '').replace(' de ', '/').replace('. ', '/');
     const [m, a] = mesLabel.split('/');
     const label = m.charAt(0).toUpperCase() + m.slice(1) + (a ? '/' + a : '');
@@ -525,7 +534,7 @@ function contarDiasUteis(ano, mes, ate) {
 // Retorna a data final do filtro ativo (fallback: hoje)
 function getFimFiltro() {
   const val = document.getElementById('data-fim')?.value;
-  return val ? new Date(val + 'T12:00:00') : new Date();
+  return val ? new Date(val + 'T12:00:00') : hojeBA();
 }
 
 // Conta dias úteis entre duas datas (intervalo livre)
@@ -585,7 +594,7 @@ function periodoAnterior() {
   const fim = recuar(df.getFullYear(), df.getMonth(), df.getDate());
   fim.setHours(23, 59, 59);
 
-  const label = ini.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
+  const label = ini.toLocaleString('pt-BR', { month: 'short', timeZone: TZ }).replace('.', '');
   return { ini, fim, label: label.charAt(0).toUpperCase() + label.slice(1) };
 }
 
@@ -824,7 +833,7 @@ function renderizarGraficos(vends) {
     const [m, a] = ref.mes.split('/');
     const meses_pt = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
     const mesNum = meses_pt.indexOf(m.toLowerCase());
-    const anoNum = a ? 2000 + parseInt(a) : new Date().getFullYear();
+    const anoNum = a ? 2000 + parseInt(a) : hojeBA().getFullYear();
     if (mesNum === -1) return 0;
     const ini = new Date(anoNum, mesNum, 1);
     const fim = new Date(anoNum, mesNum + 1, 0, 23, 59, 59);
