@@ -412,8 +412,8 @@ body {
 .card-grafico canvas { max-height: 220px; }
 
 .legenda-reunioes {
-  display: grid;
-  grid-template-columns: repeat(3, auto);
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 0.2rem 2rem;
   margin-bottom: 0.75rem;
