@@ -874,6 +874,7 @@ function renderizarGraficos(vends) {
     borderColor: cores[i % cores.length] + 'aa',
     borderDash: [4, 4],
     tension: 0.4, pointRadius: 3, fill: false,
+    hidden: true,
   }));
   const datasetsRe = vends.map((v, i) => ({
     label:       v.nome + ' (realizadas)',
@@ -901,7 +902,7 @@ function renderizarGraficos(vends) {
       const idxRe = vends.length + i;
       return `
         <div class="legenda-col">
-          <div class="legenda-item legenda-toggle" data-idx="${idxAg}" style="cursor:pointer">
+          <div class="legenda-item legenda-toggle legenda-hidden" data-idx="${idxAg}" style="cursor:pointer">
             <span class="legenda-linha tracejada" style="border-color:${cor}aa"></span>
             <span>${v.nome} (agendadas)</span>
           </div>
