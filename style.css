@@ -224,7 +224,7 @@ body {
 .card-resumo:hover { border-color: var(--azul-borda); }
 .card-resumo.destaque {
   border-color: var(--azul);
-  justify-content: center;
+  gap: 0;
 }
 
 .card-label { font-size: 0.72rem; color: var(--texto-muted); text-transform: uppercase; letter-spacing: 0.06em; }
@@ -242,9 +242,9 @@ body {
 /* gauge mini */
 .gauge-mini-wrap {
   position: relative;
-  max-width: 260px;
-  width: 100%;
-  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 .gauge-mini-wrap canvas { width: 100% !important; display: block; }
 .gauge-labels {

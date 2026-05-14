@@ -1079,10 +1079,12 @@ function desenharGauge(id, valor, maximo) {
   canvas.width  = w;
   const labelH  = Math.max(14, Math.round(w * 0.055));
   const padBot  = labelH + 18;
-  canvas.height = Math.round(w * 0.58) + padBot;
+  const padTop  = 10;
+  const r0      = Math.round(w / 2) - 14;
+  canvas.height = r0 + padBot + padTop;
   const cx = w / 2;
   const cy = canvas.height - padBot;
-  const r  = Math.min(cx, cy) - 10;
+  const r  = Math.min(cx - 2, r0);
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
