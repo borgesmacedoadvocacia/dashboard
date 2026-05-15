@@ -37,13 +37,14 @@ const PRESETS = {
   '30dias':       () => { const h = hojeBA(), d = new Date(h); d.setDate(h.getDate()-29); return [d, h]; },
   'este-ano':     () => { const h = hojeBA(); return [new Date(h.getFullYear(), 0, 1), h]; },
   'mes-passado':  () => { const h = hojeBA(); return [new Date(h.getFullYear(), h.getMonth()-1, 1), new Date(h.getFullYear(), h.getMonth(), 0)]; },
+  'ano-passado':  () => { const h = hojeBA(); return [new Date(h.getFullYear()-1, 0, 1), new Date(h.getFullYear()-1, 11, 31)]; },
 };
 
 const PRESET_LABELS = {
   'hoje': 'Hoje', 'ontem': 'Ontem', 'esta-semana': 'Esta semana',
   'mes-ate-agora': 'Este mês, até agora', 'este-mes': 'Este mês (completo)',
   '7dias': 'Últimos 7 dias', '30dias': 'Últimos 30 dias',
-  'este-ano': 'Este ano, até agora', 'mes-passado': 'Mês passado',
+  'este-ano': 'Este ano, até agora', 'mes-passado': 'Mês passado', 'ano-passado': 'Ano passado',
   'fixo': 'Período personalizado',
 };
 
