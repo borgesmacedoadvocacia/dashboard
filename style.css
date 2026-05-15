@@ -1,6 +1,9 @@
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Remove flash azul ao tocar em elementos no iOS */
+* { -webkit-tap-highlight-color: transparent; }
+
 :root {
   --bg: #0f1117;
   --bg2: #161b26;
@@ -18,7 +21,12 @@
   --shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
 
-html { font-size: 15px; }
+html {
+  font-size: 15px;
+  /* Impede o iOS de aumentar fontes automaticamente ao girar a tela */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body {
   background: var(--bg);
@@ -26,6 +34,8 @@ body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
   padding-bottom: 2rem;
+  /* Evita scroll horizontal acidental em mobile */
+  overflow-x: hidden;
 }
 
 /* ===== CABEÇALHO ===== */
@@ -618,81 +628,190 @@ body {
 
 /* ===== RESPONSIVO ===== */
 
-/* Tablet (até 900px) */
+/* Dispositivos de toque — remove hover "grudado" após o toque */
+@media (hover: none) {
+  .card-vendedor:hover { transform: none; border-color: var(--borda); }
+  .card-resumo:hover   { border-color: var(--borda); }
+}
+
+/* ── Tablet (até 900px) ── */
 @media (max-width: 900px) {
   .resumo-geral {
     grid-template-columns: 1fr;
-    padding: 1rem 1rem 0;
+    padding: 1rem 1.25rem 0;
   }
   .resumo-coluna-esq .card-resumo { flex: none; }
   .vendedores-grid { grid-template-columns: 1fr; }
 }
 
-/* Mobile (até 640px) */
+/* ── Mobile (até 640px) ── */
 @media (max-width: 640px) {
   html { font-size: 14px; }
 
-  /* Cabeçalho */
-  .header { padding: 0.6rem 0.75rem; gap: 0.5rem; }
-  .logo-img { height: 28px; }
-  .header-updated { display: none; }
-  .header-right { flex-direction: row; align-items: center; gap: 0.4rem; }
-  .btn-atualizar span { display: none; }
-  .btn-atualizar { padding: 0.4rem 0.6rem; }
+  /* iOS: font-size 16px nos inputs para evitar zoom automático */
+  input[type="date"],
+  input[type="text"],
+  .modal-busca { font-size: 16px !important; }
 
-  /* Date picker — abre em largura total */
-  .date-picker-btn { font-size: 0.75rem; padding: 0.38rem 0.55rem; }
+  /* ── Cabeçalho: 2 linhas (logo+botão / filtro de data) ── */
+  .header {
+    display: grid;
+    grid-template-areas:
+      "logo right"
+      "filters filters";
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.5rem 0.5rem;
+    padding: 0.65rem 0.85rem;
+  }
+  .header-logo    { grid-area: logo; }
+  .header-right   { grid-area: right; flex-direction: row; align-items: center; gap: 0.4rem; }
+  .header-filters { grid-area: filters; display: flex; align-items: center; gap: 0.4rem; width: 100%; }
+  .date-picker    { flex: 1; }
+  .date-picker-btn {
+    width: 100%;
+    justify-content: center;
+    font-size: 0.82rem;
+    min-height: 40px;
+  }
+  .logo-img       { height: 30px; }
+  .header-updated { display: none; }
+  .btn-atualizar span { display: none; }
+  .btn-atualizar  { padding: 0.4rem 0.65rem; min-height: 36px; }
+  .btn-reset-data { width: 36px; height: 36px; flex-shrink: 0; }
+
+  /* ── Date picker: bottom sheet (sobe da base da tela) ── */
   .date-picker-panel {
     position: fixed;
-    top: auto;
-    left: 0.75rem;
-    right: 0.75rem;
-    transform: none;
-    width: auto;
-    max-height: 80vh;
+    top: auto !important;
+    bottom: 0;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    width: 100%;
+    max-height: 75vh;
     overflow-y: auto;
+    border-radius: 16px 16px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Respeita a barra Home do iPhone */
+    padding-bottom: env(safe-area-inset-bottom, 8px);
   }
+  /* Indicador de "arraste" no topo do painel */
+  .date-picker-panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin: 10px auto 4px;
+  }
+  .preset-item    { padding: 0.7rem 0.75rem; min-height: 44px; }
+  .date-apply-btn { min-height: 44px; font-size: 0.95rem; }
+  .date-custom    { padding: 0.85rem; }
 
-  /* Resumo geral */
-  .resumo-geral { padding: 0.75rem 0.75rem 0; gap: 0.5rem; }
-  .card-resumo { padding: 0.6rem 0.85rem; }
-  .card-valor { font-size: 1.3rem; }
+  /* ── Resumo geral ── */
+  .resumo-geral { padding: 0.75rem 0.85rem 0; gap: 0.5rem; }
+  .card-resumo  { padding: 0.65rem 0.9rem; }
+  .card-valor   { font-size: 1.3rem; }
 
-  /* Seções */
-  .secao { padding: 1rem 0.75rem 0; }
+  /* ── Seções ── */
+  .secao        { padding: 1rem 0.85rem 0; }
   .secao-titulo { font-size: 0.85rem; margin-bottom: 0.75rem; }
 
-  /* Grids — coluna única */
+  /* ── Grids: coluna única ── */
   .visao-geral-grid,
   .desempenho-grid,
-  .evolucao-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+  .evolucao-grid { grid-template-columns: 1fr; gap: 0.65rem; }
 
-  /* Cards */
-  .card-metrica { padding: 0.9rem 1rem; }
-  .card-grafico { padding: 0.9rem 1rem; }
-  .card-grafico canvas { max-height: 180px; }
+  /* ── Cards ── */
+  .card-metrica  { padding: 0.9rem 1rem; }
+  .card-grafico  { padding: 0.9rem 1rem; }
+  .card-grafico canvas { max-height: 200px; }
   .card-vendedor { padding: 0.9rem 1rem; }
 
-  /* Número grande (no-show, tempo) */
+  /* ── Números grandes (no-show, tempo médio) ── */
   .noshow-pct { font-size: 1.7rem; }
 
-  /* Legenda gráfico — fonte menor */
-  .legenda-reunioes { gap: 0.15rem 0.75rem; }
-  .legenda-item { font-size: 0.65rem; }
-  .legenda-linha { width: 16px; }
+  /* ── Legenda do gráfico de reuniões ── */
+  .legenda-reunioes { gap: 0.2rem 0.75rem; }
+  .legenda-item     { font-size: 0.65rem; }
+  .legenda-toggle   { min-height: 32px; align-items: center; }
+  .legenda-linha    { width: 16px; }
 
-  /* Meta proporcional — quebra linha se precisar */
-  .meta-prop-row { flex-wrap: wrap; gap: 0.15rem; }
+  /* ── Meta proporcional ── */
+  .meta-prop-row   { flex-wrap: wrap; gap: 0.15rem; }
   .meta-prop-linha { flex-wrap: wrap; }
-  .meta-prop-val { font-size: 0.8rem; }
+  .meta-prop-val   { font-size: 0.8rem; }
 
-  /* Vendor cards */
+  /* ── Cards de vendedor ── */
   .vendedores-grid { grid-template-columns: 1fr; }
-  .cv-stats { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-  .cv-stat-val { font-size: 1rem; }
+  .cv-stats        { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .cv-stat-val     { font-size: 1rem; }
 
-  /* Footer */
+  /* ── Modal: bottom sheet ── */
+  .modal-overlay { align-items: flex-end; }
+  .modal-box {
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  /* Indicador de "arraste" no topo do modal */
+  .modal-box::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+    align-self: center;
+  }
+  .modal-header  { padding: 0.75rem 1rem 0.6rem; }
+  .modal-filtros { padding: 0.5rem 1rem 0; }
+  .modal-busca   { min-height: 44px; }
+  .modal-table-wrap {
+    padding: 0.6rem 0.75rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  /* Oculta colunas de data no modal (menos críticas em tela pequena) */
+  .modal-tabela th:nth-child(2),
+  .modal-tabela td:nth-child(2),
+  .modal-tabela th:nth-child(3),
+  .modal-tabela td:nth-child(3) { display: none; }
+  .modal-tabela { font-size: 0.78rem; }
+  .modal-rodape { padding: 0.5rem 1rem; }
+
+  /* ── Safe area: barra Home do iPhone ── */
+  body { padding-bottom: env(safe-area-inset-bottom, 0); }
+
+  /* ── Footer ── */
   .footer { padding: 1.5rem 1rem; }
+}
+
+/* ── Telas muito pequenas (≤ 380px — iPhone SE, etc.) ── */
+@media (max-width: 380px) {
+  html { font-size: 13px; }
+  .header       { padding: 0.5rem 0.65rem; gap: 0.35rem 0.4rem; }
+  .logo-img     { height: 26px; }
+  .resumo-geral { padding: 0.6rem 0.65rem 0; }
+  .secao        { padding: 0.75rem 0.65rem 0; }
+  .card-metrica,
+  .card-grafico,
+  .card-vendedor { padding: 0.75rem 0.85rem; }
+  .cv-nome      { font-size: 1rem; }
+  .card-grafico canvas { max-height: 170px; }
 }
 
 /* ===== LOADING ===== */
