@@ -68,5 +68,8 @@ const CONFIG = {
   // Os feriados nacionais e móveis (Carnaval, Páscoa, Corpus Christi) já são calculados automaticamente
   FERIADOS_EXTRAS: [
     // '2026-07-09', // Exemplo: Revolução Constitucionalista (SP)
+    '2026-06-05', // Pós-Corpus Christi (emenda)
+    '2026-06-23', // Feriado municipal/estadual
+    '2026-06-24', // São João (feriado estadual BA)
   ],
 };
