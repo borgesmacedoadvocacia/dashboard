@@ -48,8 +48,8 @@ const CONFIG = {
   // --- EQUIPE ATIVA E METAS ---
   EQUIPE: [
     { nome: 'Maiane',  tipo: 'SDR',    meta: 80000 },
-    { nome: 'Luiz',    tipo: 'Closer', meta: 50000 },
-    { nome: 'Gabriel', tipo: 'Closer', meta: 30000 },
+    { nome: 'Luiz',    tipo: 'Closer', meta: 65000 },
+    { nome: 'Gabriel', tipo: 'Closer', meta: 15000 },
   ],
 
   // Meta total do escritório (máximo do velocímetro geral)
