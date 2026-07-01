@@ -71,5 +71,6 @@ const CONFIG = {
     '2026-06-05', // Pós-Corpus Christi (emenda)
     '2026-06-23', // Feriado municipal/estadual
     '2026-06-24', // São João (feriado estadual BA)
+    '2026-07-02', // Feriado municipal
   ],
 };
