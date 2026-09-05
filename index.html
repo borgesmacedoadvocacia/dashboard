@@ -3,18 +3,32 @@
 <head>
   <meta charset="UTF-8" />
 <script>
-/* Central BM — o acesso a este dashboard agora é pela central única.
-   Link antigo/acesso direto é remanejado para a central; dentro dela,
-   com a sessão ativa, a página abre normalmente. */
+/* Central BM — o caminho normal é entrar pela central, que repassa a sessão e
+   abre o painel sem segunda digitação. Mas cada dashboard tem o seu próprio
+   cofre AES-GCM: o acesso direto continua protegido pelo cofre, não por este
+   trecho. Por isso aqui só se ajusta a moldura — nunca se bloqueia a página.
+
+   A versão anterior chamava location.replace(PORTAL) em dois casos, e os dois
+   quebravam o uso em iPad e celular:
+
+   1. Sempre que a página abria fora do iframe. Aba nova, favorito e atalho da
+      tela de início caíam na central — e o Safari, ao contrário do Chrome, não
+      copia o sessionStorage para a aba nova, então a central também pedia
+      login outra vez. Do lado de quem usa, o dashboard não abria.
+
+   2. Sempre que o sessionStorage não respondia. Com "Bloquear todos os
+      cookies" ligado, ou em navegação privada, ler o storage lança exceção; o
+      catch deixava ok=false e mandava para a central, que pelo mesmo motivo
+      não guardava sessão — laço infinito de login.
+
+   Agora, sem sessão do portal a página simplesmente mostra o próprio login. */
 (function () {
-  var PORTAL = 'https://borgesmacedoadvocacia.github.io/';
-  if (location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
-  function ir() { try { window.top.location.replace(PORTAL); } catch (e) { location.replace(PORTAL); } }
-  if (window.self === window.top) { ir(); return; }
-  var ok = false;
-  try { ok = sessionStorage.getItem('bm_portal_auth') === '1'; } catch (e) {}
-  if (!ok) { ir(); return; }
-  document.documentElement.setAttribute('data-portal', '1');
+  if (location.protocol === 'file:' ||
+      location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+  /* Dentro da central quem oferece "Sair" é a moldura, não o painel. Ser um
+     iframe é fato do DOM e não depende de storage — que é exatamente o que
+     falha no Safari com cookies bloqueados. */
+  if (window.self !== window.top) document.documentElement.setAttribute('data-portal', '1');
 })();
 </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
