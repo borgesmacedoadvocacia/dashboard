@@ -21,7 +21,7 @@ const CONFIG = {
       STATUS_ATENDIMENTO: 'Etapa do Funil',
       LEAD:               'Lead',
     },
-    STATUS_NAO_REALIZADO: ['Reunião Agendada', 'Remarcar Reunião'],
+    STATUS_NAO_REALIZADO: ['Reunião Agendada', 'Remarcar Reunião', 'Lead Apagado'],
   },
 
   // --- PLANILHA 2: Contratos Fechados 2026 ---
