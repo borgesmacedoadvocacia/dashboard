@@ -11,8 +11,8 @@ const CONFIG = {
   // --- PLANILHA 1: CRM / Atendimentos ---
   // Controla reuniões agendadas e realizadas
   SHEET_ATENDIMENTOS: {
-    ID:  '1mlObepYSpWFnKS4fuhLhDf7t33ecNTGWSpud4uS1j_Y',
-    GID: '845920680',
+    ID:  '1L01ullcCOWFsUsWlBg8ofV42luRG5-NmyyGfXMJelOc',
+    GID: '0',
     COLS: {
       CLOSER:             'Closer',
       SDR:                'SDR',
