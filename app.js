@@ -277,7 +277,7 @@ async function buscarDoSheets() {
     fetchSheetData(cfg.SHEET_CONTRATOS_2025.ID, cfg.SHEET_CONTRATOS_2025.GID),
   ]);
 
-  const atendimentos  = sheetsToObjects(rowsAtend);
+  const atendimentos  = sheetsToObjects(rowsAtend).filter(r => r[cfg.SHEET_ATENDIMENTOS.COLS.LEAD]);
   const contratos2026 = sheetsToObjects(rowsContratos);
   // Normaliza 2025: mapeia NOME COMPLETO para a chave de cliente usada em 2026
   const clienteKey = cfg.SHEET_CONTRATOS.COLS.CLIENTE;
