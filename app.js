@@ -1485,7 +1485,7 @@ function fecharModal() {
     <th>Data Atendimento</th>
     <th>SDR</th>
     <th>Closer</th>
-    <th>Status</th>`;
+    <th>Etapa do Funil</th>`;
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
