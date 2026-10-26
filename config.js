@@ -18,10 +18,10 @@ const CONFIG = {
       SDR:                'SDR',
       DATA_AGENDAMENTO:   'Data do Agendamento',
       DATA_ATENDIMENTO:   'Data do Atendimento',
-      STATUS_ATENDIMENTO: 'Status do Atendimento',
+      STATUS_ATENDIMENTO: 'Resultado do Atendimento',
       LEAD:               'Lead',
     },
-    STATUS_REALIZADO: 'Realizado',
+    STATUS_NAO_REALIZADO: ['Reunião Agendada', 'Remarcar Reunião'],
   },
 
   // --- PLANILHA 2: Contratos Fechados 2026 ---

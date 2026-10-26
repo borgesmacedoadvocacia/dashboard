@@ -17,6 +17,11 @@ function hojeBA() {
 let grafFaturamento = null;
 let grafReunioes    = null;
 
+function eRealizado(status) {
+  if (!status) return false;
+  return !CONFIG.SHEET_ATENDIMENTOS.STATUS_NAO_REALIZADO.includes(status);
+}
+
 // ---- ENTRADA PRINCIPAL ----
 document.addEventListener('DOMContentLoaded', () => {
   iniciarDatePicker();
@@ -300,7 +305,7 @@ async function buscarDoSheets() {
   const realizadosNoPeriodo = atendimentos.filter(r => {
     const d = parseBRDate(r[cA.DATA_ATENDIMENTO]);
     return d && d >= dataInicio && d <= dataFim &&
-      r[cA.STATUS_ATENDIMENTO] === cfg.SHEET_ATENDIMENTOS.STATUS_REALIZADO;
+      eRealizado(r[cA.STATUS_ATENDIMENTO]);
   });
   const contratosNoPeriodo = contratos.filter(r => {
     const d = parseBRDate(r[cC.DATA_FECHAMENTO]);
@@ -334,7 +339,7 @@ async function buscarDoSheets() {
     const realizadas = meusAtend.filter(r => {
       const d = parseBRDate(r[cA.DATA_ATENDIMENTO]);
       return d && d >= dataInicio && d <= dataFim &&
-        r[cA.STATUS_ATENDIMENTO] === cfg.SHEET_ATENDIMENTOS.STATUS_REALIZADO;
+        eRealizado(r[cA.STATUS_ATENDIMENTO]);
     }).length;
 
     const meusContratos = contratos.filter(r => {
@@ -385,7 +390,7 @@ async function buscarDoSheets() {
     const realizadas = meusAtend.filter(r => {
       const dt = parseBRDate(r[cA.DATA_ATENDIMENTO]);
       return dt && dt >= dataInicio && dt <= dataFim &&
-        r[cA.STATUS_ATENDIMENTO] === cfg.SHEET_ATENDIMENTOS.STATUS_REALIZADO;
+        eRealizado(r[cA.STATUS_ATENDIMENTO]);
     }).length;
     return {
       nome,
@@ -428,7 +433,7 @@ function calcularHistorico(nLow, isSdr, atendimentos, contratos, dataRef) {
     const realizadas = atendimentos.filter(r => {
       const d = parseBRDate(r[cA.DATA_ATENDIMENTO]);
       return (r[colAtend] || '').toLowerCase() === nLow && d && d >= ini && d <= fim &&
-        r[cA.STATUS_ATENDIMENTO] === CONFIG.SHEET_ATENDIMENTOS.STATUS_REALIZADO;
+        eRealizado(r[cA.STATUS_ATENDIMENTO]);
     }).length;
 
     const faturamento = contratos
@@ -612,7 +617,7 @@ function calcularTotaisParaPeriodo(ini, fim) {
 
   return {
     agendadas:   atend.filter(r => { const d = parseBRDate(r[cA.DATA_AGENDAMENTO]); return d && d >= ini && d <= fim; }).length,
-    realizadas:  atend.filter(r => { const d = parseBRDate(r[cA.DATA_ATENDIMENTO]); return d && d >= ini && d <= fim && r[cA.STATUS_ATENDIMENTO] === CONFIG.SHEET_ATENDIMENTOS.STATUS_REALIZADO; }).length,
+    realizadas:  atend.filter(r => { const d = parseBRDate(r[cA.DATA_ATENDIMENTO]); return d && d >= ini && d <= fim && eRealizado(r[cA.STATUS_ATENDIMENTO]); }).length,
     clientes:    contratosP.length,
     faturamento: contratosP.reduce((s, r) => s + parseBRL(r[cC.HONORARIOS]), 0),
   };
@@ -964,7 +969,7 @@ function calcularVendedorPeriodo(nLow, isSdr, ini, fim) {
   });
   return {
     agendadas:   atend.filter(r => { const d = parseBRDate(r[cA.DATA_AGENDAMENTO]); return d && d >= ini && d <= fim; }).length,
-    realizadas:  atend.filter(r => { const d = parseBRDate(r[cA.DATA_ATENDIMENTO]); return d && d >= ini && d <= fim && r[cA.STATUS_ATENDIMENTO] === CONFIG.SHEET_ATENDIMENTOS.STATUS_REALIZADO; }).length,
+    realizadas:  atend.filter(r => { const d = parseBRDate(r[cA.DATA_ATENDIMENTO]); return d && d >= ini && d <= fim && eRealizado(r[cA.STATUS_ATENDIMENTO]); }).length,
     clientes:    contratosP.length,
     faturamento: contratosP.reduce((s, r) => s + parseBRL(r[cC.HONORARIOS]), 0),
   };
@@ -1350,7 +1355,7 @@ function abrirModalReunioes(tipo) {
     _modalLinhas = atend.filter(r => {
       const d = parseBRDate(r[cA.DATA_ATENDIMENTO]);
       return d && d >= dataInicio && d <= dataFim &&
-        r[cA.STATUS_ATENDIMENTO] === CONFIG.SHEET_ATENDIMENTOS.STATUS_REALIZADO;
+        eRealizado(r[cA.STATUS_ATENDIMENTO]);
     });
     document.getElementById('modal-titulo').textContent = 'Reuniões Realizadas no Período';
   }
