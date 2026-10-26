@@ -18,8 +18,7 @@ let grafFaturamento = null;
 let grafReunioes    = null;
 
 function eRealizado(status) {
-  if (!status) return false;
-  return !CONFIG.SHEET_ATENDIMENTOS.STATUS_NAO_REALIZADO.includes(status);
+  return !CONFIG.SHEET_ATENDIMENTOS.STATUS_NAO_REALIZADO.includes(status || '');
 }
 
 // ---- ENTRADA PRINCIPAL ----
