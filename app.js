@@ -271,14 +271,14 @@ function toInputDate(d) {
 async function buscarDoSheets() {
   const cfg = CONFIG;
 
-  const [csvAtend, csvContratos, rows2025] = await Promise.all([
-    fetchCSV(cfg.SHEET_ATENDIMENTOS.ID,   cfg.SHEET_ATENDIMENTOS.GID),
-    fetchCSV(cfg.SHEET_CONTRATOS.ID,      cfg.SHEET_CONTRATOS.GID),
+  const [rowsAtend, rowsContratos, rows2025] = await Promise.all([
+    fetchSheetData(cfg.SHEET_ATENDIMENTOS.ID,   cfg.SHEET_ATENDIMENTOS.GID),
+    fetchSheetData(cfg.SHEET_CONTRATOS.ID,      cfg.SHEET_CONTRATOS.GID),
     fetchSheetData(cfg.SHEET_CONTRATOS_2025.ID, cfg.SHEET_CONTRATOS_2025.GID),
   ]);
 
-  const atendimentos  = parseCSV(csvAtend);
-  const contratos2026 = parseCSV(csvContratos);
+  const atendimentos  = sheetsToObjects(rowsAtend);
+  const contratos2026 = sheetsToObjects(rowsContratos);
   // Normaliza 2025: mapeia NOME COMPLETO para a chave de cliente usada em 2026
   const clienteKey = cfg.SHEET_CONTRATOS.COLS.CLIENTE;
   const contratos2025 = sheetsToObjects(rows2025).map(r => ({
