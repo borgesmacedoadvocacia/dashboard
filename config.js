@@ -18,7 +18,7 @@ const CONFIG = {
       SDR:                'SDR',
       DATA_AGENDAMENTO:   'Data do Agendamento',
       DATA_ATENDIMENTO:   'Data do Atendimento',
-      STATUS_ATENDIMENTO: 'Resultado do Atendimento',
+      STATUS_ATENDIMENTO: 'Etapa do Funil',
       LEAD:               'Lead',
     },
     STATUS_NAO_REALIZADO: ['Reunião Agendada', 'Remarcar Reunião'],
