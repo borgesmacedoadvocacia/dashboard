@@ -1,18 +1,31 @@
 // ============================================================
 // CONFIGURAÇÃO DO DASHBOARD — BORGES MACEDO
 // ============================================================
+//
+// O painel deste repositório saiu do ar em 05/11/2026. Este arquivo continua
+// publicado porque o painel da TV (painel-tv) lê daqui os nomes das colunas,
+// as metas e os feriados. Nada mais depende dele.
+//
+// O que saiu daqui em 05/11/2026, e por quê:
+//
+//   • a chave de API do Google — este repositório é público, e a chave vivia
+//     nele em texto puro. Quem precisava dela (o painel da TV) passou a tirar
+//     a sua do próprio cofre. A chave antiga continua no histórico público do
+//     git: só a rotação dela no Google Cloud a invalida de fato;
+//   • os IDs e gids das planilhas — ID no código entrega o endereço do dado
+//     junto com a página. As planilhas de atendimentos e de contratos agora
+//     são lidas pelo proxy (fontes "atend" e "clientes"), que guarda os IDs
+//     nas Propriedades do Script e roda com a conta dona delas;
+//   • o bloco da planilha de 2025, que nenhum painel lia mais daqui.
+//
+// Sobrou a configuração de verdade: como as colunas se chamam e quais são as
+// metas. Mudar uma meta aqui continua mudando a TV.
 
 const CONFIG = {
 
-  // Chave de API do Google Cloud (lê todas as linhas, incluindo ocultas)
-  GOOGLE_API_KEY: 'AIzaSyDPMGdaY0Yxm4EFrGFoaamJeWBtfDAJZfw',
-
-
-  // --- PLANILHA 1: CRM / Atendimentos ---
+  // --- PLANILHA 1: CRM / Atendimentos (proxy: fonte "atend") ---
   // Controla reuniões agendadas e realizadas
   SHEET_ATENDIMENTOS: {
-    ID:  '1L01ullcCOWFsUsWlBg8ofV42luRG5-NmyyGfXMJelOc',
-    GID: '0',
     COLS: {
       CLOSER:             'Closer',
       SDR:                'SDR',
@@ -24,10 +37,8 @@ const CONFIG = {
     STATUS_NAO_REALIZADO: ['Reunião Agendada', 'Remarcar Reunião', 'Lead Apagado'],
   },
 
-  // --- PLANILHA 2: Contratos Fechados 2026 ---
+  // --- PLANILHA 2: Contratos Fechados 2026 (proxy: fonte "clientes") ---
   SHEET_CONTRATOS: {
-    ID:  '1FWbG3Xuo8TjFfi0puF6E9GFsXrUb6fRdollTfq9-4Dg',
-    GID: '467767546',
     COLS: {
       CLOSER:          'CLOSER',
       SDR:             'SDR',
@@ -36,13 +47,6 @@ const CONFIG = {
       HONORARIOS:      'VALOR DA ENTRADA',
       CLIENTE:         'CONTATO (QUEM ESTÁ EM CONTATO COM O ESCRITÓRIO)',
     },
-  },
-
-  // --- PLANILHA 3: Contratos Fechados 2025 (aba DADOS) ---
-  SHEET_CONTRATOS_2025: {
-    ID:  '1nQGtxa97k5vamnt7udQJvjcNadBFAWHgd6v6dvOhI1c',
-    GID: '1037589154',
-    COL_CLIENTE: 'NOME COMPLETO',
   },
 
   // --- EQUIPE ATIVA E METAS ---
